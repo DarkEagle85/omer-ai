@@ -482,7 +482,7 @@ export default function Home() {
       )}
 
       <aside
-        className={`fixed md:static z-40 top-0 left-0 h-screen w-72 bg-zinc-900 border-r border-zinc-800 p-4 flex flex-col transform transition-transform duration-300 ${
+        className={`fixed md:static z-40 top-0 left-0 h-screen w-80 bg-zinc-900 border-r border-zinc-800 p-4 flex flex-col transform transition-transform duration-300 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
@@ -542,7 +542,7 @@ export default function Home() {
           Geçmiş Sohbetler
         </div>
 
-        <div className="space-y-2 overflow-y-auto">
+        <div className="space-y-2 overflow-y-auto pr-1">
           {filteredConversations.map((conv) => (
             <div
               key={conv.id}
@@ -571,43 +571,43 @@ export default function Home() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => saveRename(conv.id)}
-                      className="flex-1 bg-blue-600 rounded-lg py-1 text-xs"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-2 text-xs font-semibold"
                     >
                       Kaydet
                     </button>
 
                     <button
                       onClick={cancelRename}
-                      className="flex-1 bg-zinc-700 rounded-lg py-1 text-xs"
+                      className="flex-1 bg-zinc-700 hover:bg-zinc-600 rounded-lg py-2 text-xs font-semibold"
                     >
                       İptal
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="space-y-2">
                   <button
                     onClick={() => openConversation(conv.id)}
-                    className="text-left flex-1 hover:text-blue-400 truncate"
+                    className="text-left w-full hover:text-blue-400 truncate font-semibold"
                   >
                     {conv.title}
                   </button>
 
-                  <button
-                    onClick={() => startRename(conv)}
-                    className="text-zinc-400 hover:text-white text-xs"
-                    title="Yeniden adlandır"
-                  >
-                    ✎
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => startRename(conv)}
+                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg py-2 text-xs font-semibold"
+                    >
+                      Düzenle
+                    </button>
 
-                  <button
-                    onClick={() => deleteConversation(conv.id)}
-                    className="text-red-500 hover:text-red-400 font-bold"
-                    title="Sil"
-                  >
-                    ×
-                  </button>
+                    <button
+                      onClick={() => deleteConversation(conv.id)}
+                      className="w-10 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 text-xs font-bold"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
