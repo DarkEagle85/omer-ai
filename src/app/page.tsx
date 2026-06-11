@@ -72,6 +72,9 @@ export default function Home() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const [dailyLimit, setDailyLimit] = useState(20);
+  const [usedLimit, setUsedLimit] = useState(0);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -82,6 +85,10 @@ export default function Home() {
       conv.title.toLowerCase().includes(searchText.toLowerCase())
     );
   }, [conversations, searchText]);
+
+  const remainingLimit = Math.max(dailyLimit - usedLimit, 0);
+  const progressPercent =
+    dailyLimit > 0 ? Math.min((usedLimit / dailyLimit) * 100, 100) : 0;
 
   function getAuthHeaders() {
     const token = localStorage.getItem("token");
@@ -137,11 +144,14 @@ export default function Home() {
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     setUser(null);
     setMessages([welcomeMessage]);
     setConversations([]);
     setConversationId(null);
     setSidebarOpen(false);
+    setDailyLimit(20);
+    setUsedLimit(0);
   }
 
   async function loadConversations() {
@@ -226,6 +236,28 @@ export default function Home() {
           conversationId,
         }),
       });
+
+      const limitHeader = response.headers.get("X-Daily-Limit");
+      const usedHeader = response.headers.get("X-Daily-Used");
+
+      if (limitHeader) setDailyLimit(Number(limitHeader));
+      if (usedHeader) setUsedLimit(Number(usedHeader));
+
+      if (response.status === 429) {
+        const errorText = await response.text();
+
+        setMessages([
+          ...updatedMessages,
+          {
+            role: "assistant",
+            content: errorText || "Günlük mesaj hakkın doldu.",
+          },
+        ]);
+
+        setLoading(false);
+        setStreamStarted(false);
+        return;
+      }
 
       const newConversationId = response.headers.get("X-Conversation-Id");
 
@@ -367,7 +399,25 @@ export default function Home() {
           <div className="font-semibold truncate">{user.name}</div>
           <div className="text-xs text-zinc-400 truncate">{user.email}</div>
 
-          <div className="mt-3 text-xs text-zinc-500">Plan: Ücretsiz</div>
+          <div className="mt-4">
+            <div className="flex justify-between text-xs text-zinc-400 mb-1">
+              <span>Günlük Limit</span>
+              <span>
+                {remainingLimit} / {dailyLimit}
+              </span>
+            </div>
+
+            <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 transition-all"
+                style={{
+                  width: `${progressPercent}%`,
+                }}
+              />
+            </div>
+
+            <div className="mt-2 text-xs text-zinc-500">Plan: Ücretsiz</div>
+          </div>
         </div>
 
         <input
@@ -431,7 +481,7 @@ export default function Home() {
           <div>
             <h2 className="text-xl font-semibold">AI Asistan</h2>
             <p className="text-sm text-zinc-400">
-              Enter gönderir, Shift + Enter alt satır açar
+              Kalan mesaj hakkı gösterimi aktif
             </p>
           </div>
         </header>
