@@ -38,6 +38,21 @@ function extractText(node: unknown): string {
   return "";
 }
 
+function TypingIndicator() {
+  return (
+    <div className="max-w-5xl rounded-2xl p-5 bg-zinc-800 mr-auto">
+      <div className="flex items-center gap-2 text-zinc-300">
+        <span>Ömer AI düşünüyor</span>
+        <span className="flex gap-1">
+          <span className="animate-bounce">.</span>
+          <span className="animate-bounce delay-150">.</span>
+          <span className="animate-bounce delay-300">.</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [isLogin, setIsLogin] = useState(true);
   const [user, setUser] = useState<User | null>(null);
@@ -50,6 +65,7 @@ export default function Home() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [streamStarted, setStreamStarted] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -59,31 +75,23 @@ export default function Home() {
 
   function getAuthHeaders() {
     const token = localStorage.getItem("token");
-
-    return {
-      Authorization: `Bearer ${token}`,
-    };
+    return { Authorization: `Bearer ${token}` };
   }
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
-
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    if (savedUser) setUser(JSON.parse(savedUser));
   }, []);
 
   useEffect(() => {
-    if (user) {
-      loadConversations();
-    }
+    if (user) loadConversations();
   }, [user]);
 
   useEffect(() => {
     if (shouldAutoScrollRef.current) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, loading, streamStarted]);
 
   function handleScroll() {
     const area = chatAreaRef.current;
@@ -97,14 +105,11 @@ export default function Home() {
 
   async function handleAuth() {
     const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-
     const body = isLogin ? { email, password } : { name, email, password };
 
     const res = await fetch(endpoint, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
@@ -186,9 +191,10 @@ export default function Home() {
 
     const updatedMessages = [...messages, userMessage];
 
-    setMessages([...updatedMessages, { role: "assistant", content: "" }]);
+    setMessages(updatedMessages);
     setMessage("");
     setLoading(true);
+    setStreamStarted(false);
 
     try {
       const response = await fetch("/api/chat", {
@@ -210,7 +216,6 @@ export default function Home() {
       }
 
       const reader = response.body?.getReader();
-
       if (!reader) return;
 
       const decoder = new TextDecoder();
@@ -220,7 +225,12 @@ export default function Home() {
         const result = await reader.read();
         if (result.done) break;
 
-        fullText += decoder.decode(result.value);
+        const chunk = decoder.decode(result.value);
+        fullText += chunk;
+
+        if (!streamStarted) {
+          setStreamStarted(true);
+        }
 
         setMessages([
           ...updatedMessages,
@@ -243,6 +253,7 @@ export default function Home() {
     }
 
     setLoading(false);
+    setStreamStarted(false);
   }
 
   function newChat() {
@@ -379,7 +390,7 @@ export default function Home() {
           <div>
             <h2 className="text-xl font-semibold">AI Asistan</h2>
             <p className="text-sm text-zinc-400">
-              Mobil uyumlu kullanıcıya özel sohbet sistemi aktif
+              Typing animasyonu aktif
             </p>
           </div>
         </header>
@@ -439,6 +450,8 @@ export default function Home() {
             </div>
           ))}
 
+          {loading && !streamStarted && <TypingIndicator />}
+
           <div ref={bottomRef} />
         </div>
 
@@ -459,7 +472,7 @@ export default function Home() {
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl px-5 md:px-6 font-semibold"
             >
-              Gönder
+              {loading ? "Bekle..." : "Gönder"}
             </button>
           </div>
         </footer>
