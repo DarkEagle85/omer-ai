@@ -203,7 +203,14 @@ export default function Home() {
         }),
       });
 
+      const newConversationId = response.headers.get("X-Conversation-Id");
+
+      if (newConversationId) {
+        setConversationId(newConversationId);
+      }
+
       const reader = response.body?.getReader();
+
       if (!reader) return;
 
       const decoder = new TextDecoder();

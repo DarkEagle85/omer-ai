@@ -16,22 +16,17 @@ export async function POST(req: Request) {
     const user = getUserFromRequest(req);
 
     if (!user) {
-      return new Response("Yetkisiz erişim", {
-        status: 401,
-      });
+      return new Response("Yetkisiz erişim", { status: 401 });
     }
 
     const body = await req.json();
-
     const messages: ChatMessage[] = body.messages || [];
     let conversationId: string | null = body.conversationId || null;
 
     const lastUserMessage = messages[messages.length - 1];
 
     if (!lastUserMessage || lastUserMessage.role !== "user") {
-      return new Response("Kullanıcı mesajı bulunamadı.", {
-        status: 400,
-      });
+      return new Response("Kullanıcı mesajı bulunamadı.", { status: 400 });
     }
 
     if (!conversationId) {
@@ -87,7 +82,7 @@ export async function POST(req: Request) {
           data: {
             role: "assistant",
             content: fullResponse,
-            conversationId,
+            conversationId: conversationId as string,
           },
         });
 
@@ -98,13 +93,11 @@ export async function POST(req: Request) {
     return new Response(readableStream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
+        "X-Conversation-Id": conversationId,
       },
     });
   } catch (error) {
     console.error(error);
-
-    return new Response("AI cevap hatası", {
-      status: 500,
-    });
+    return new Response("AI cevap hatası", { status: 500 });
   }
 }
