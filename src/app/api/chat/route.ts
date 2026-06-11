@@ -11,6 +11,30 @@ type ChatMessage = {
   content: string;
 };
 
+async function generateTitle(message: string) {
+  try {
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Kullanıcının mesajına göre maksimum 5 kelimelik kısa ve net Türkçe sohbet başlığı üret. Sadece başlığı yaz.",
+        },
+        {
+          role: "user",
+          content: message,
+        },
+      ],
+      max_tokens: 20,
+    });
+
+    return response.choices[0].message.content || "Yeni Sohbet";
+  } catch {
+    return message.length > 40 ? message.slice(0, 40) + "..." : message;
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const user = getUserFromRequest(req);
@@ -31,10 +55,7 @@ export async function POST(req: Request) {
     }
 
     if (!conversationId) {
-      const title =
-        lastUserMessage.content.length > 40
-          ? lastUserMessage.content.slice(0, 40) + "..."
-          : lastUserMessage.content;
+      const title = await generateTitle(lastUserMessage.content);
 
       const conversation = await prisma.conversation.create({
         data: {
