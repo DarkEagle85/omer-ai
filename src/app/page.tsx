@@ -72,6 +72,7 @@ export default function Home() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   function getAuthHeaders() {
     const token = localStorage.getItem("token");
@@ -179,10 +180,20 @@ export default function Home() {
     }
   }
 
+  function stopGeneration() {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setLoading(false);
+    setStreamStarted(false);
+  }
+
   async function sendMessage() {
     if (!message.trim() || loading) return;
 
     shouldAutoScrollRef.current = true;
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     const userMessage: ChatMessage = {
       role: "user",
@@ -199,6 +210,7 @@ export default function Home() {
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
+        signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
@@ -228,9 +240,7 @@ export default function Home() {
         const chunk = decoder.decode(result.value);
         fullText += chunk;
 
-        if (!streamStarted) {
-          setStreamStarted(true);
-        }
+        setStreamStarted(true);
 
         setMessages([
           ...updatedMessages,
@@ -242,16 +252,27 @@ export default function Home() {
       }
 
       await loadConversations();
-    } catch {
-      setMessages([
-        ...updatedMessages,
-        {
-          role: "assistant",
-          content: "Bir hata oluştu.",
-        },
-      ]);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setMessages([
+          ...updatedMessages,
+          {
+            role: "assistant",
+            content: "Cevap durduruldu.",
+          },
+        ]);
+      } else {
+        setMessages([
+          ...updatedMessages,
+          {
+            role: "assistant",
+            content: "Bir hata oluştu.",
+          },
+        ]);
+      }
     }
 
+    abortControllerRef.current = null;
     setLoading(false);
     setStreamStarted(false);
   }
@@ -390,7 +411,7 @@ export default function Home() {
           <div>
             <h2 className="text-xl font-semibold">AI Asistan</h2>
             <p className="text-sm text-zinc-400">
-              Typing animasyonu aktif
+              Durdur butonu aktif
             </p>
           </div>
         </header>
@@ -464,16 +485,25 @@ export default function Home() {
                 if (e.key === "Enter") sendMessage();
               }}
               placeholder="Mesaj yaz..."
-              className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl p-4 outline-none min-w-0"
+              disabled={loading}
+              className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl p-4 outline-none min-w-0 disabled:opacity-60"
             />
 
-            <button
-              onClick={sendMessage}
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl px-5 md:px-6 font-semibold"
-            >
-              {loading ? "Bekle..." : "Gönder"}
-            </button>
+            {loading ? (
+              <button
+                onClick={stopGeneration}
+                className="bg-red-600 hover:bg-red-700 rounded-xl px-5 md:px-6 font-semibold"
+              >
+                Durdur
+              </button>
+            ) : (
+              <button
+                onClick={sendMessage}
+                className="bg-blue-600 hover:bg-blue-700 rounded-xl px-5 md:px-6 font-semibold"
+              >
+                Gönder
+              </button>
+            )}
           </div>
         </footer>
       </section>
