@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -43,6 +43,7 @@ function TypingIndicator() {
     <div className="max-w-5xl rounded-2xl p-5 bg-zinc-800 mr-auto">
       <div className="flex items-center gap-2 text-zinc-300">
         <span>Ömer AI düşünüyor</span>
+
         <span className="flex gap-1">
           <span className="animate-bounce">.</span>
           <span className="animate-bounce delay-150">.</span>
@@ -63,9 +64,12 @@ export default function Home() {
 
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [searchText, setSearchText] = useState("");
+
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [streamStarted, setStreamStarted] = useState(false);
+
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -74,28 +78,45 @@ export default function Home() {
   const shouldAutoScrollRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const filteredConversations = useMemo(() => {
+    return conversations.filter((conv) =>
+      conv.title.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [conversations, searchText]);
+
   function getAuthHeaders() {
     const token = localStorage.getItem("token");
-    return { Authorization: `Bearer ${token}` };
+
+    return {
+      Authorization: `Bearer ${token}`,
+    };
   }
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
-    if (savedUser) setUser(JSON.parse(savedUser));
+
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
   }, []);
 
   useEffect(() => {
-    if (user) loadConversations();
+    if (user) {
+      loadConversations();
+    }
   }, [user]);
 
   useEffect(() => {
     if (shouldAutoScrollRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      bottomRef.current?.scrollIntoView({
+        behavior: "smooth",
+      });
     }
   }, [messages, loading, streamStarted]);
 
   function handleScroll() {
     const area = chatAreaRef.current;
+
     if (!area) return;
 
     const distanceFromBottom =
@@ -105,12 +126,19 @@ export default function Home() {
   }
 
   async function handleAuth() {
-    const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-    const body = isLogin ? { email, password } : { name, email, password };
+    const endpoint = isLogin
+      ? "/api/auth/login"
+      : "/api/auth/register";
+
+    const body = isLogin
+      ? { email, password }
+      : { name, email, password };
 
     const res = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(body),
     });
 
@@ -128,6 +156,7 @@ export default function Home() {
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     setUser(null);
     setMessages([welcomeMessage]);
     setConversations([]);
@@ -141,6 +170,7 @@ export default function Home() {
     });
 
     const data = await response.json();
+
     setConversations(data.conversations || []);
   }
 
@@ -163,7 +193,9 @@ export default function Home() {
     );
 
     setMessages(loadedMessages);
+
     shouldAutoScrollRef.current = true;
+
     setSidebarOpen(false);
   }
 
@@ -173,7 +205,9 @@ export default function Home() {
       headers: getAuthHeaders(),
     });
 
-    setConversations((prev) => prev.filter((item) => item.id !== id));
+    setConversations((prev) =>
+      prev.filter((item) => item.id !== id)
+    );
 
     if (conversationId === id) {
       newChat();
@@ -183,6 +217,7 @@ export default function Home() {
   function stopGeneration() {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
+
     setLoading(false);
     setStreamStarted(false);
   }
@@ -193,6 +228,7 @@ export default function Home() {
     shouldAutoScrollRef.current = true;
 
     const controller = new AbortController();
+
     abortControllerRef.current = controller;
 
     const userMessage: ChatMessage = {
@@ -204,6 +240,7 @@ export default function Home() {
 
     setMessages(updatedMessages);
     setMessage("");
+
     setLoading(true);
     setStreamStarted(false);
 
@@ -221,23 +258,28 @@ export default function Home() {
         }),
       });
 
-      const newConversationId = response.headers.get("X-Conversation-Id");
+      const newConversationId =
+        response.headers.get("X-Conversation-Id");
 
       if (newConversationId) {
         setConversationId(newConversationId);
       }
 
       const reader = response.body?.getReader();
+
       if (!reader) return;
 
       const decoder = new TextDecoder();
+
       let fullText = "";
 
       while (true) {
         const result = await reader.read();
+
         if (result.done) break;
 
         const chunk = decoder.decode(result.value);
+
         fullText += chunk;
 
         setStreamStarted(true);
@@ -253,7 +295,10 @@ export default function Home() {
 
       await loadConversations();
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
+      if (
+        error instanceof DOMException &&
+        error.name === "AbortError"
+      ) {
         setMessages([
           ...updatedMessages,
           {
@@ -273,15 +318,20 @@ export default function Home() {
     }
 
     abortControllerRef.current = null;
+
     setLoading(false);
     setStreamStarted(false);
   }
 
   function newChat() {
     setMessages([welcomeMessage]);
+
     setConversationId(null);
+
     setMessage("");
+
     shouldAutoScrollRef.current = true;
+
     setSidebarOpen(false);
   }
 
@@ -293,7 +343,9 @@ export default function Home() {
     return (
       <main className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-6">
         <div className="bg-zinc-900 p-8 rounded-2xl w-full max-w-md">
-          <h1 className="text-3xl font-bold mb-6 text-center">Ömer AI</h1>
+          <h1 className="text-3xl font-bold mb-6 text-center">
+            Ömer AI
+          </h1>
 
           {!isLogin && (
             <input
@@ -350,12 +402,25 @@ export default function Home() {
 
       <aside
         className={`fixed md:static z-40 top-0 left-0 h-screen w-72 bg-zinc-900 border-r border-zinc-800 p-4 flex flex-col transform transition-transform duration-300 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          sidebarOpen
+            ? "translate-x-0"
+            : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <h1 className="text-2xl font-bold mb-2">Ömer AI</h1>
+        <h1 className="text-2xl font-bold mb-2">
+          Ömer AI
+        </h1>
 
-        <p className="text-sm text-zinc-400 mb-4 truncate">{user.email}</p>
+        <p className="text-sm text-zinc-400 mb-4 truncate">
+          {user.email}
+        </p>
+
+        <input
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          placeholder="Sohbet ara..."
+          className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none mb-4"
+        />
 
         <button
           onClick={newChat}
@@ -371,14 +436,18 @@ export default function Home() {
           Çıkış Yap
         </button>
 
-        <div className="mt-6 text-sm text-zinc-400 mb-3">Geçmiş Sohbetler</div>
+        <div className="mt-6 text-sm text-zinc-400 mb-3">
+          Geçmiş Sohbetler
+        </div>
 
         <div className="space-y-2 overflow-y-auto">
-          {conversations.map((conv) => (
+          {filteredConversations.map((conv) => (
             <div
               key={conv.id}
               className={`rounded-xl p-3 text-sm flex items-center gap-2 ${
-                conversationId === conv.id ? "bg-zinc-800" : "bg-zinc-950"
+                conversationId === conv.id
+                  ? "bg-zinc-800"
+                  : "bg-zinc-950"
               }`}
             >
               <button
@@ -409,9 +478,12 @@ export default function Home() {
           </button>
 
           <div>
-            <h2 className="text-xl font-semibold">AI Asistan</h2>
+            <h2 className="text-xl font-semibold">
+              AI Asistan
+            </h2>
+
             <p className="text-sm text-zinc-400">
-              Durdur butonu aktif
+              Sohbet arama sistemi aktif
             </p>
           </div>
         </header>
@@ -440,7 +512,9 @@ export default function Home() {
                       return (
                         <div className="my-4 rounded-xl overflow-hidden border border-zinc-700 bg-black">
                           <div className="bg-zinc-900 px-4 py-2 flex justify-between text-sm">
-                            <span className="text-zinc-400">code</span>
+                            <span className="text-zinc-400">
+                              code
+                            </span>
 
                             <button
                               onClick={() => copyText(text)}
@@ -471,7 +545,9 @@ export default function Home() {
             </div>
           ))}
 
-          {loading && !streamStarted && <TypingIndicator />}
+          {loading && !streamStarted && (
+            <TypingIndicator />
+          )}
 
           <div ref={bottomRef} />
         </div>
@@ -482,7 +558,9 @@ export default function Home() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") sendMessage();
+                if (e.key === "Enter") {
+                  sendMessage();
+                }
               }}
               placeholder="Mesaj yaz..."
               disabled={loading}
