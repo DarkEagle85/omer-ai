@@ -97,11 +97,18 @@ export default function Home() {
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
-    if (savedUser) setUser(JSON.parse(savedUser));
+    const token = localStorage.getItem("token");
+
+    if (savedUser && token) {
+      setUser(JSON.parse(savedUser));
+    }
   }, []);
 
   useEffect(() => {
-    if (user) loadConversations();
+    if (user) {
+      loadProfile();
+      loadConversations();
+    }
   }, [user]);
 
   useEffect(() => {
@@ -120,6 +127,32 @@ export default function Home() {
     shouldAutoScrollRef.current = distanceFromBottom < 120;
   }
 
+  async function loadProfile() {
+    try {
+      const response = await fetch("/api/me", {
+        headers: getAuthHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (data.user) {
+        const freshUser: User = {
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+        };
+
+        setUser(freshUser);
+        localStorage.setItem("user", JSON.stringify(freshUser));
+
+        setDailyLimit(data.user.dailyMessageLimit || 20);
+        setUsedLimit(data.user.usedMessagesToday || 0);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   async function handleAuth() {
     const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
     const body = isLogin ? { email, password } : { name, email, password };
@@ -136,6 +169,9 @@ export default function Home() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       setUser(data.user);
+      setEmail("");
+      setPassword("");
+      setName("");
     } else {
       alert(data.error || "İşlem başarısız");
     }
@@ -288,6 +324,7 @@ export default function Home() {
       }
 
       await loadConversations();
+      await loadProfile();
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         setMessages([
@@ -481,7 +518,7 @@ export default function Home() {
           <div>
             <h2 className="text-xl font-semibold">AI Asistan</h2>
             <p className="text-sm text-zinc-400">
-              Kalan mesaj hakkı gösterimi aktif
+              Limit bilgisi girişte yüklenir
             </p>
           </div>
         </header>
