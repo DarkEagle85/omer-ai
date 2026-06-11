@@ -8,12 +8,15 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  name          String
-  email         String         @unique
-  password      String
-  createdAt     DateTime       @default(now())
-  conversations Conversation[]
+  id              String         @id @default(cuid())
+  name            String
+  email           String         @unique
+  password        String
+  dailyMessageLimit Int          @default(20)
+  usedMessagesToday Int          @default(0)
+  lastMessageDate DateTime?
+  createdAt       DateTime       @default(now())
+  conversations   Conversation[]
 }
 
 model Conversation {

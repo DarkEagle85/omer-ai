@@ -11,6 +11,14 @@ type ChatMessage = {
   content: string;
 };
 
+function isSameDay(date1: Date, date2: Date) {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
 async function generateTitle(message: string) {
   try {
     const response = await client.chat.completions.create({
@@ -37,10 +45,45 @@ async function generateTitle(message: string) {
 
 export async function POST(req: Request) {
   try {
-    const user = getUserFromRequest(req);
+    const authUser = getUserFromRequest(req);
 
-    if (!user) {
+    if (!authUser) {
       return new Response("Yetkisiz erişim", { status: 401 });
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: {
+        id: authUser.userId,
+      },
+    });
+
+    if (!dbUser) {
+      return new Response("Kullanıcı bulunamadı", { status: 404 });
+    }
+
+    const now = new Date();
+
+    let usedMessagesToday = dbUser.usedMessagesToday;
+
+    if (!dbUser.lastMessageDate || !isSameDay(dbUser.lastMessageDate, now)) {
+      usedMessagesToday = 0;
+
+      await prisma.user.update({
+        where: {
+          id: dbUser.id,
+        },
+        data: {
+          usedMessagesToday: 0,
+          lastMessageDate: now,
+        },
+      });
+    }
+
+    if (usedMessagesToday >= dbUser.dailyMessageLimit) {
+      return new Response(
+        `Günlük mesaj hakkın doldu. Limit: ${dbUser.dailyMessageLimit}`,
+        { status: 429 }
+      );
     }
 
     const body = await req.json();
@@ -60,7 +103,7 @@ export async function POST(req: Request) {
       const conversation = await prisma.conversation.create({
         data: {
           title,
-          userId: user.userId,
+          userId: authUser.userId,
         },
       });
 
@@ -72,6 +115,16 @@ export async function POST(req: Request) {
         role: "user",
         content: lastUserMessage.content,
         conversationId,
+      },
+    });
+
+    await prisma.user.update({
+      where: {
+        id: authUser.userId,
+      },
+      data: {
+        usedMessagesToday: usedMessagesToday + 1,
+        lastMessageDate: now,
       },
     });
 
@@ -130,6 +183,8 @@ export async function POST(req: Request) {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "X-Conversation-Id": conversationId,
+        "X-Daily-Limit": String(dbUser.dailyMessageLimit),
+        "X-Daily-Used": String(usedMessagesToday + 1),
       },
     });
   } catch (error) {
