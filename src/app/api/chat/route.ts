@@ -20,6 +20,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
+
     const messages: ChatMessage[] = body.messages || [];
     let conversationId: string | null = body.conversationId || null;
 
@@ -53,6 +54,16 @@ export async function POST(req: Request) {
       },
     });
 
+    const oldMessages = await prisma.message.findMany({
+      where: {
+        conversationId,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+      take: 20,
+    });
+
     const stream = await client.responses.stream({
       model: "gpt-5.5",
       input: [
@@ -61,7 +72,11 @@ export async function POST(req: Request) {
           content:
             "Sen Türkçe konuşan kısa, net ve pratik bir yapay zeka asistanısın. Kod istendiğinde kısa açıklama yap ve minimum çalışan kod ver. Kodları Markdown code block içinde yaz.",
         },
-        ...messages,
+        ...oldMessages.map((msg) => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+        })),
+        lastUserMessage,
       ],
     });
 
