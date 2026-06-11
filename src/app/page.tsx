@@ -98,7 +98,6 @@ export default function Home() {
 
   function getAuthHeaders() {
     const token = localStorage.getItem("token");
-
     return {
       Authorization: `Bearer ${token}`,
     };
@@ -174,7 +173,6 @@ export default function Home() {
 
   async function handleAuth() {
     const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-
     const body = isLogin ? { email, password } : { name, email, password };
 
     const res = await fetch(endpoint, {
@@ -219,7 +217,6 @@ export default function Home() {
     });
 
     const data = await response.json();
-
     setConversations(data.conversations || []);
   }
 
@@ -292,7 +289,6 @@ export default function Home() {
   function stopGeneration() {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
-
     setLoading(false);
     setStreamStarted(false);
   }
@@ -556,13 +552,8 @@ export default function Home() {
                     value={editingTitle}
                     onChange={(e) => setEditingTitle(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        saveRename(conv.id);
-                      }
-
-                      if (e.key === "Escape") {
-                        cancelRename();
-                      }
+                      if (e.key === "Enter") saveRename(conv.id);
+                      if (e.key === "Escape") cancelRename();
                     }}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 outline-none"
                     autoFocus
@@ -585,29 +576,29 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => openConversation(conv.id)}
-                    className="text-left w-full hover:text-blue-400 truncate font-semibold"
+                    className="flex-1 text-left truncate hover:text-blue-400 transition"
                   >
                     {conv.title}
                   </button>
 
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => startRename(conv)}
-                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg py-2 text-xs font-semibold"
-                    >
-                      Düzenle
-                    </button>
+                  <button
+                    onClick={() => startRename(conv)}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 transition text-zinc-300 hover:text-white"
+                    title="Düzenle"
+                  >
+                    ✎
+                  </button>
 
-                    <button
-                      onClick={() => deleteConversation(conv.id)}
-                      className="w-10 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 text-xs font-bold"
-                    >
-                      ×
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => deleteConversation(conv.id)}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-red-600 hover:bg-red-700 transition text-white font-bold"
+                    title="Sil"
+                  >
+                    ×
+                  </button>
                 </div>
               )}
             </div>
@@ -627,7 +618,7 @@ export default function Home() {
           <div>
             <h2 className="text-xl font-semibold">AI Asistan</h2>
             <p className="text-sm text-zinc-400">
-              Sohbet başlığı düzenleme aktif
+              Sohbet başlığı kalem ikonu ile düzenlenir
             </p>
           </div>
         </header>
@@ -672,7 +663,6 @@ export default function Home() {
                         </div>
                       );
                     },
-
                     code({ children }) {
                       return (
                         <code className="bg-zinc-700 px-1 py-0.5 rounded">
