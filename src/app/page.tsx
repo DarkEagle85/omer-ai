@@ -92,7 +92,6 @@ export default function Home() {
   }, [conversations, searchText]);
 
   const remainingLimit = Math.max(dailyLimit - usedLimit, 0);
-
   const progressPercent =
     dailyLimit > 0 ? Math.min((usedLimit / dailyLimit) * 100, 100) : 0;
 
@@ -101,6 +100,25 @@ export default function Home() {
     return {
       Authorization: `Bearer ${token}`,
     };
+  }
+
+  function forceLogout(messageText?: string) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    setUser(null);
+    setMessages([welcomeMessage]);
+    setConversations([]);
+    setConversationId(null);
+    setSidebarOpen(false);
+    setDailyLimit(20);
+    setUsedLimit(0);
+    setLoading(false);
+    setStreamStarted(false);
+
+    if (messageText) {
+      alert(messageText);
+    }
   }
 
   useEffect(() => {
@@ -153,6 +171,11 @@ export default function Home() {
 
       const data = await response.json();
 
+      if (response.status === 401 || response.status === 403) {
+        forceLogout(data.error || "Oturum kapatıldı.");
+        return;
+      }
+
       if (data.user) {
         const freshUser: User = {
           id: data.user.id,
@@ -199,16 +222,7 @@ export default function Home() {
   }
 
   function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    setUser(null);
-    setMessages([welcomeMessage]);
-    setConversations([]);
-    setConversationId(null);
-    setSidebarOpen(false);
-    setDailyLimit(20);
-    setUsedLimit(0);
+    forceLogout();
   }
 
   async function loadConversations() {
@@ -216,7 +230,13 @@ export default function Home() {
       headers: getAuthHeaders(),
     });
 
+    if (response.status === 401 || response.status === 403) {
+      forceLogout("Oturum geçersiz veya hesabınız pasifleştirilmiş.");
+      return;
+    }
+
     const data = await response.json();
+
     setConversations(data.conversations || []);
   }
 
@@ -224,6 +244,11 @@ export default function Home() {
     const response = await fetch(`/api/conversations/${id}`, {
       headers: getAuthHeaders(),
     });
+
+    if (response.status === 401 || response.status === 403) {
+      forceLogout("Oturum geçersiz veya hesabınız pasifleştirilmiş.");
+      return;
+    }
 
     const data = await response.json();
 
@@ -256,7 +281,7 @@ export default function Home() {
   async function saveRename(id: string) {
     if (!editingTitle.trim()) return;
 
-    await fetch(`/api/conversations/${id}`, {
+    const response = await fetch(`/api/conversations/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -267,6 +292,11 @@ export default function Home() {
       }),
     });
 
+    if (response.status === 401 || response.status === 403) {
+      forceLogout("Oturum geçersiz veya hesabınız pasifleştirilmiş.");
+      return;
+    }
+
     setEditingConversationId(null);
     setEditingTitle("");
 
@@ -274,10 +304,15 @@ export default function Home() {
   }
 
   async function deleteConversation(id: string) {
-    await fetch(`/api/conversations/${id}`, {
+    const response = await fetch(`/api/conversations/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
+
+    if (response.status === 401 || response.status === 403) {
+      forceLogout("Oturum geçersiz veya hesabınız pasifleştirilmiş.");
+      return;
+    }
 
     setConversations((prev) => prev.filter((item) => item.id !== id));
 
@@ -289,6 +324,7 @@ export default function Home() {
   function stopGeneration() {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
+
     setLoading(false);
     setStreamStarted(false);
   }
@@ -326,6 +362,12 @@ export default function Home() {
           conversationId,
         }),
       });
+
+      if (response.status === 401 || response.status === 403) {
+        const errorText = await response.text();
+        forceLogout(errorText || "Hesabınız pasifleştirilmiş.");
+        return;
+      }
 
       const limitHeader = response.headers.get("X-Daily-Limit");
       const usedHeader = response.headers.get("X-Daily-Used");
@@ -618,7 +660,7 @@ export default function Home() {
           <div>
             <h2 className="text-xl font-semibold">AI Asistan</h2>
             <p className="text-sm text-zinc-400">
-              Sohbet başlığı kalem ikonu ile düzenlenir
+              Pasif kullanıcı otomatik çıkış sistemi aktif
             </p>
           </div>
         </header>

@@ -21,6 +21,8 @@ export async function GET(req: Request) {
         id: true,
         name: true,
         email: true,
+        role: true,
+        isActive: true,
         dailyMessageLimit: true,
         usedMessagesToday: true,
         lastMessageDate: true,
@@ -31,6 +33,13 @@ export async function GET(req: Request) {
       return NextResponse.json(
         { error: "Kullanıcı bulunamadı" },
         { status: 404 }
+      );
+    }
+
+    if (!user.isActive) {
+      return NextResponse.json(
+        { error: "Hesabınız pasifleştirilmiş." },
+        { status: 403 }
       );
     }
 
