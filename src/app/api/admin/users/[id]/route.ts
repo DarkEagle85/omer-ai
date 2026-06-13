@@ -42,6 +42,7 @@ export async function PATCH(req: Request, context: RouteContext) {
     const updateData: {
       dailyMessageLimit?: number;
       role?: string;
+      isActive?: boolean;
       usedMessagesToday?: number;
       lastMessageDate?: Date | null;
     } = {};
@@ -61,10 +62,7 @@ export async function PATCH(req: Request, context: RouteContext) {
 
     if (body.role !== undefined) {
       if (body.role !== "user" && body.role !== "admin") {
-        return NextResponse.json(
-          { error: "Geçersiz rol" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Geçersiz rol" }, { status: 400 });
       }
 
       if (id === authUser.userId && body.role !== "admin") {
@@ -75,6 +73,24 @@ export async function PATCH(req: Request, context: RouteContext) {
       }
 
       updateData.role = body.role;
+    }
+
+    if (body.isActive !== undefined) {
+      if (typeof body.isActive !== "boolean") {
+        return NextResponse.json(
+          { error: "isActive boolean olmalı" },
+          { status: 400 }
+        );
+      }
+
+      if (id === authUser.userId && body.isActive === false) {
+        return NextResponse.json(
+          { error: "Kendi hesabını pasifleştiremezsin" },
+          { status: 400 }
+        );
+      }
+
+      updateData.isActive = body.isActive;
     }
 
     if (body.resetUsage === true) {
@@ -99,6 +115,7 @@ export async function PATCH(req: Request, context: RouteContext) {
         name: true,
         email: true,
         role: true,
+        isActive: true,
         dailyMessageLimit: true,
         usedMessagesToday: true,
         lastMessageDate: true,
