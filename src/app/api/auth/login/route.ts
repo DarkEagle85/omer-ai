@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import jwt, { Secret, SignOptions } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
-
-const JWT_SECRET = process.env.JWT_SECRET as Secret;
 
 export async function POST(req: Request) {
   try {
@@ -27,6 +25,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!user.isActive) {
+      return NextResponse.json(
+        { error: "Hesabınız pasifleştirilmiş. Lütfen yöneticiyle iletişime geçin." },
+        { status: 403 }
+      );
+    }
+
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
@@ -36,17 +41,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const options: SignOptions = {
-      expiresIn: "7d",
-    };
-
     const token = jwt.sign(
       {
         userId: user.id,
         email: user.email,
       },
-      JWT_SECRET,
-      options
+      process.env.JWT_SECRET as string,
+      {
+        expiresIn: "7d",
+      }
     );
 
     return NextResponse.json({
