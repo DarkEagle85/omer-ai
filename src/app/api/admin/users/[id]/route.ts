@@ -77,12 +77,25 @@ export async function PATCH(req: Request, context: RouteContext) {
     }
 
     if (body.plan !== undefined) {
-      if (body.plan !== "free" && body.plan !== "pro" && body.plan !== "admin") {
-        return NextResponse.json({ error: "Geçersiz plan" }, { status: 400 });
-      }
+  if (body.plan !== "free" && body.plan !== "pro" && body.plan !== "admin") {
+    return NextResponse.json({ error: "Geçersiz plan" }, { status: 400 });
+  }
 
-      updateData.plan = body.plan;
-    }
+  updateData.plan = body.plan;
+
+  if (body.plan === "free") {
+    updateData.dailyMessageLimit = 20;
+  }
+
+  if (body.plan === "pro") {
+    updateData.dailyMessageLimit = 200;
+  }
+
+  if (body.plan === "admin") {
+    updateData.dailyMessageLimit = 1000;
+  }
+}
+
 
     if (body.isActive !== undefined) {
       if (typeof body.isActive !== "boolean") {
