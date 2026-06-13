@@ -13,6 +13,7 @@ model User {
   email              String         @unique
   password           String
   role               String         @default("user")
+  isActive           Boolean        @default(true)
   dailyMessageLimit  Int            @default(20)
   usedMessagesToday  Int            @default(0)
   lastMessageDate    DateTime?
