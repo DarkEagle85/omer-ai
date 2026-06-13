@@ -24,6 +24,7 @@ export async function PATCH(req: Request, context: RouteContext) {
         id: authUser.userId,
       },
       select: {
+        id: true,
         role: true,
       },
     });
@@ -60,6 +61,13 @@ export async function PATCH(req: Request, context: RouteContext) {
       if (body.role !== "user" && body.role !== "admin") {
         return NextResponse.json(
           { error: "Geçersiz rol" },
+          { status: 400 }
+        );
+      }
+
+      if (id === authUser.userId && body.role !== "admin") {
+        return NextResponse.json(
+          { error: "Kendi admin yetkini kaldıramazsın" },
           { status: 400 }
         );
       }
