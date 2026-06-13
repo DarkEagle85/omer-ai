@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type AdminUser = {
   id: string;
@@ -24,6 +24,21 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState("");
+
+  const filteredUsers = useMemo(() => {
+    if (!stats?.users) return [];
+
+    const q = searchText.toLowerCase().trim();
+
+    return stats.users.filter((user) => {
+      return (
+        user.name.toLowerCase().includes(q) ||
+        user.email.toLowerCase().includes(q) ||
+        user.role.toLowerCase().includes(q)
+      );
+    });
+  }, [stats, searchText]);
 
   useEffect(() => {
     loadStats();
@@ -111,7 +126,9 @@ export default function AdminPage() {
   }
 
   function resetUserUsage(userId: string) {
-    const ok = confirm("Bu kullanıcının günlük kullanımını sıfırlamak istiyor musun?");
+    const ok = confirm(
+      "Bu kullanıcının günlük kullanımını sıfırlamak istiyor musun?"
+    );
 
     if (!ok) return;
 
@@ -185,20 +202,29 @@ export default function AdminPage() {
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-          <div className="p-5 border-b border-zinc-800 flex items-center justify-between gap-4">
+          <div className="p-5 border-b border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold">Kullanıcılar</h2>
               <p className="text-sm text-zinc-400 mt-1">
-                Rol, günlük limit ve kullanım sıfırlama işlemleri
+                Arama, rol, günlük limit ve kullanım sıfırlama işlemleri
               </p>
             </div>
 
-            <button
-              onClick={loadStats}
-              className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-4 py-2 text-sm font-semibold"
-            >
-              Yenile
-            </button>
+            <div className="flex gap-3">
+              <input
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Kullanıcı ara..."
+                className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 outline-none text-sm"
+              />
+
+              <button
+                onClick={loadStats}
+                className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-4 py-2 text-sm font-semibold"
+              >
+                Yenile
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -216,7 +242,7 @@ export default function AdminPage() {
               </thead>
 
               <tbody>
-                {stats?.users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr
                     key={user.id}
                     className="border-t border-zinc-800 hover:bg-zinc-800/40"
@@ -288,6 +314,14 @@ export default function AdminPage() {
                     </td>
                   </tr>
                 ))}
+
+                {filteredUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="p-6 text-center text-zinc-500">
+                      Aramaya uygun kullanıcı bulunamadı.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
