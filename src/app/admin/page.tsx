@@ -7,6 +7,7 @@ type AdminUser = {
   name: string;
   email: string;
   role: string;
+  isActive: boolean;
   dailyMessageLimit: number;
   usedMessagesToday: number;
   createdAt: string;
@@ -35,7 +36,8 @@ export default function AdminPage() {
       return (
         user.name.toLowerCase().includes(q) ||
         user.email.toLowerCase().includes(q) ||
-        user.role.toLowerCase().includes(q)
+        user.role.toLowerCase().includes(q) ||
+        (user.isActive ? "aktif" : "pasif").includes(q)
       );
     });
   }, [stats, searchText]);
@@ -77,6 +79,7 @@ export default function AdminPage() {
       dailyMessageLimit?: number;
       role?: string;
       resetUsage?: boolean;
+      isActive?: boolean;
     }
   ) {
     try {
@@ -137,6 +140,22 @@ export default function AdminPage() {
     });
   }
 
+  function toggleUserActive(user: AdminUser) {
+    const nextStatus = !user.isActive;
+
+    const ok = confirm(
+      nextStatus
+        ? "Bu kullanıcıyı tekrar aktif yapmak istiyor musun?"
+        : "Bu kullanıcıyı pasifleştirmek istiyor musun?"
+    );
+
+    if (!ok) return;
+
+    updateUser(user.id, {
+      isActive: nextStatus,
+    });
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
@@ -165,7 +184,7 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-white p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold">Ömer AI Admin Panel</h1>
@@ -206,7 +225,7 @@ export default function AdminPage() {
             <div>
               <h2 className="text-xl font-semibold">Kullanıcılar</h2>
               <p className="text-sm text-zinc-400 mt-1">
-                Arama, rol, günlük limit ve kullanım sıfırlama işlemleri
+                Arama, aktif/pasif, rol, günlük limit ve kullanım sıfırlama
               </p>
             </div>
 
@@ -231,6 +250,7 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead className="bg-zinc-950 text-zinc-400">
                 <tr>
+                  <th className="text-left p-4">Durum</th>
                   <th className="text-left p-4">İsim</th>
                   <th className="text-left p-4">Email</th>
                   <th className="text-left p-4">Rol</th>
@@ -245,8 +265,24 @@ export default function AdminPage() {
                 {filteredUsers.map((user) => (
                   <tr
                     key={user.id}
-                    className="border-t border-zinc-800 hover:bg-zinc-800/40"
+                    className={`border-t border-zinc-800 hover:bg-zinc-800/40 ${
+                      !user.isActive ? "opacity-60" : ""
+                    }`}
                   >
+                    <td className="p-4">
+                      <button
+                        onClick={() => toggleUserActive(user)}
+                        disabled={savingUserId === user.id}
+                        className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+                          user.isActive
+                            ? "bg-green-600 hover:bg-green-700"
+                            : "bg-red-600 hover:bg-red-700"
+                        }`}
+                      >
+                        {user.isActive ? "Aktif" : "Pasif"}
+                      </button>
+                    </td>
+
                     <td className="p-4 font-semibold">{user.name}</td>
 
                     <td className="p-4 text-zinc-300">{user.email}</td>
@@ -317,7 +353,7 @@ export default function AdminPage() {
 
                 {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="p-6 text-center text-zinc-500">
+                    <td colSpan={8} className="p-6 text-center text-zinc-500">
                       Aramaya uygun kullanıcı bulunamadı.
                     </td>
                   </tr>
