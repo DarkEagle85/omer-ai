@@ -15,7 +15,9 @@ export async function POST(req: Request) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: {
+        email,
+      },
     });
 
     if (!user) {
@@ -27,14 +29,17 @@ export async function POST(req: Request) {
 
     if (!user.isActive) {
       return NextResponse.json(
-        { error: "Hesabınız pasifleştirilmiş. Lütfen yöneticiyle iletişime geçin." },
+        {
+          error:
+            "Hesabınız pasifleştirilmiş. Lütfen yöneticiyle iletişime geçin.",
+        },
         { status: 403 }
       );
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
-    if (!isValidPassword) {
+    if (!isPasswordValid) {
       return NextResponse.json(
         { error: "Email veya şifre hatalı." },
         { status: 401 }
