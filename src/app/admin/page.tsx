@@ -103,6 +103,24 @@ export default function AdminPage() {
         return;
       }
 
+      if (result.user) {
+        setStats((prev) => {
+          if (!prev) return prev;
+
+          return {
+            ...prev,
+            users: prev.users.map((user) =>
+              user.id === userId
+                ? {
+                    ...user,
+                    ...result.user,
+                  }
+                : user
+            ),
+          };
+        });
+      }
+
       await loadStats();
       setSavingUserId(null);
     } catch (error) {
@@ -293,7 +311,7 @@ export default function AdminPage() {
 
                     <td className="p-4">
                       <select
-                        defaultValue={user.plan}
+                        value={user.plan}
                         onChange={(e) => updateUserPlan(user.id, e.target.value)}
                         className={`bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 outline-none ${
                           user.plan === "admin"
@@ -311,7 +329,7 @@ export default function AdminPage() {
 
                     <td className="p-4">
                       <select
-                        defaultValue={user.role}
+                        value={user.role}
                         onChange={(e) => updateUserRole(user.id, e.target.value)}
                         className={`bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 outline-none ${
                           user.role === "admin"
@@ -327,6 +345,7 @@ export default function AdminPage() {
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <input
+                          key={`${user.id}-${user.dailyMessageLimit}`}
                           type="number"
                           defaultValue={user.dailyMessageLimit}
                           min={1}
