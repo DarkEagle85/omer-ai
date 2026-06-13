@@ -42,6 +42,7 @@ export async function PATCH(req: Request, context: RouteContext) {
     const updateData: {
       dailyMessageLimit?: number;
       role?: string;
+      plan?: string;
       isActive?: boolean;
       usedMessagesToday?: number;
       lastMessageDate?: Date | null;
@@ -73,6 +74,14 @@ export async function PATCH(req: Request, context: RouteContext) {
       }
 
       updateData.role = body.role;
+    }
+
+    if (body.plan !== undefined) {
+      if (body.plan !== "free" && body.plan !== "pro" && body.plan !== "admin") {
+        return NextResponse.json({ error: "Geçersiz plan" }, { status: 400 });
+      }
+
+      updateData.plan = body.plan;
     }
 
     if (body.isActive !== undefined) {
@@ -115,6 +124,7 @@ export async function PATCH(req: Request, context: RouteContext) {
         name: true,
         email: true,
         role: true,
+        plan: true,
         isActive: true,
         dailyMessageLimit: true,
         usedMessagesToday: true,
