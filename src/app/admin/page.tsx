@@ -56,13 +56,14 @@ export default function AdminPage() {
     }
   }
 
-  async function updateUserLimit(userId: string, value: number) {
+  async function updateUser(
+    userId: string,
+    data: {
+      dailyMessageLimit?: number;
+      role?: string;
+    }
+  ) {
     try {
-      if (!value || value < 1) {
-        alert("Limit en az 1 olmalı");
-        return;
-      }
-
       setSavingUserId(userId);
 
       const response = await fetch(`/api/admin/users/${userId}`, {
@@ -71,15 +72,13 @@ export default function AdminPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({
-          dailyMessageLimit: value,
-        }),
+        body: JSON.stringify(data),
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
-        alert(data.error || "Limit güncellenemedi");
+        alert(result.error || "Kullanıcı güncellenemedi");
         setSavingUserId(null);
         return;
       }
@@ -91,6 +90,23 @@ export default function AdminPage() {
       alert("Bir hata oluştu");
       setSavingUserId(null);
     }
+  }
+
+  function updateUserLimit(userId: string, value: number) {
+    if (!value || value < 1) {
+      alert("Limit en az 1 olmalı");
+      return;
+    }
+
+    updateUser(userId, {
+      dailyMessageLimit: value,
+    });
+  }
+
+  function updateUserRole(userId: string, role: string) {
+    updateUser(userId, {
+      role,
+    });
   }
 
   if (loading) {
@@ -126,7 +142,7 @@ export default function AdminPage() {
           <div>
             <h1 className="text-3xl font-bold">Ömer AI Admin Panel</h1>
             <p className="text-zinc-400 mt-2">
-              Kullanıcı, sohbet ve mesaj istatistikleri
+              Kullanıcı, sohbet, mesaj ve yetki yönetimi
             </p>
           </div>
 
@@ -162,7 +178,8 @@ export default function AdminPage() {
             <div>
               <h2 className="text-xl font-semibold">Kullanıcılar</h2>
               <p className="text-sm text-zinc-400 mt-1">
-                Günlük mesaj limitlerini buradan değiştirebilirsin.
+                Kullanıcı rolünü ve günlük mesaj limitini buradan
+                değiştirebilirsin.
               </p>
             </div>
 
@@ -198,13 +215,20 @@ export default function AdminPage() {
                     <td className="p-4 text-zinc-300">{user.email}</td>
 
                     <td className="p-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs ${
-                          user.role === "admin" ? "bg-blue-600" : "bg-zinc-700"
+                      <select
+                        defaultValue={user.role}
+                        onChange={(e) => {
+                          updateUserRole(user.id, e.target.value);
+                        }}
+                        className={`bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 outline-none ${
+                          user.role === "admin"
+                            ? "text-blue-400"
+                            : "text-zinc-200"
                         }`}
                       >
-                        {user.role}
-                      </span>
+                        <option value="user">user</option>
+                        <option value="admin">admin</option>
+                      </select>
                     </td>
 
                     <td className="p-4">
@@ -233,7 +257,7 @@ export default function AdminPage() {
                         </span>
 
                         {savingUserId === user.id && (
-                          <span className="text-xs text-blue-400">
+                          <span className="text-xs text-blue-400 whitespace-nowrap">
                             Kaydediliyor...
                           </span>
                         )}
