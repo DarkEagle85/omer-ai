@@ -42,6 +42,8 @@ export async function PATCH(req: Request, context: RouteContext) {
     const updateData: {
       dailyMessageLimit?: number;
       role?: string;
+      usedMessagesToday?: number;
+      lastMessageDate?: Date | null;
     } = {};
 
     if (body.dailyMessageLimit !== undefined) {
@@ -75,6 +77,11 @@ export async function PATCH(req: Request, context: RouteContext) {
       updateData.role = body.role;
     }
 
+    if (body.resetUsage === true) {
+      updateData.usedMessagesToday = 0;
+      updateData.lastMessageDate = new Date();
+    }
+
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: "Güncellenecek alan yok" },
@@ -94,6 +101,7 @@ export async function PATCH(req: Request, context: RouteContext) {
         role: true,
         dailyMessageLimit: true,
         usedMessagesToday: true,
+        lastMessageDate: true,
       },
     });
 
