@@ -48,22 +48,12 @@ export async function PATCH(req: Request, context: RouteContext) {
       lastMessageDate?: Date | null;
     } = {};
 
-    if (body.dailyMessageLimit !== undefined) {
-      const dailyMessageLimit = Number(body.dailyMessageLimit);
-
-      if (!Number.isFinite(dailyMessageLimit) || dailyMessageLimit < 1) {
-        return NextResponse.json(
-          { error: "Limit 1 veya daha büyük olmalı" },
-          { status: 400 }
-        );
-      }
-
-      updateData.dailyMessageLimit = dailyMessageLimit;
-    }
-
     if (body.role !== undefined) {
       if (body.role !== "user" && body.role !== "admin") {
-        return NextResponse.json({ error: "Geçersiz rol" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Geçersiz rol" },
+          { status: 400 }
+        );
       }
 
       if (id === authUser.userId && body.role !== "admin") {
@@ -77,25 +67,47 @@ export async function PATCH(req: Request, context: RouteContext) {
     }
 
     if (body.plan !== undefined) {
-  if (body.plan !== "free" && body.plan !== "pro" && body.plan !== "admin") {
-    return NextResponse.json({ error: "Geçersiz plan" }, { status: 400 });
-  }
+      if (
+        body.plan !== "free" &&
+        body.plan !== "pro" &&
+        body.plan !== "admin"
+      ) {
+        return NextResponse.json(
+          { error: "Geçersiz plan" },
+          { status: 400 }
+        );
+      }
 
-  updateData.plan = body.plan;
+      updateData.plan = body.plan;
 
-  if (body.plan === "free") {
-    updateData.dailyMessageLimit = 20;
-  }
+      if (body.plan === "free") {
+        updateData.dailyMessageLimit = 20;
+      }
 
-  if (body.plan === "pro") {
-    updateData.dailyMessageLimit = 200;
-  }
+      if (body.plan === "pro") {
+        updateData.dailyMessageLimit = 200;
+      }
 
-  if (body.plan === "admin") {
-    updateData.dailyMessageLimit = 1000;
-  }
-}
+      if (body.plan === "admin") {
+        updateData.dailyMessageLimit = 1000;
+      }
 
+      updateData.usedMessagesToday = 0;
+      updateData.lastMessageDate = new Date();
+    }
+
+    if (body.dailyMessageLimit !== undefined && body.plan === undefined) {
+      const dailyMessageLimit = Number(body.dailyMessageLimit);
+
+      if (!Number.isFinite(dailyMessageLimit) || dailyMessageLimit < 1) {
+        return NextResponse.json(
+          { error: "Limit 1 veya daha büyük olmalı" },
+          { status: 400 }
+        );
+      }
+
+      updateData.dailyMessageLimit = dailyMessageLimit;
+    }
 
     if (body.isActive !== undefined) {
       if (typeof body.isActive !== "boolean") {
