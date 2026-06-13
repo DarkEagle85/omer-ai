@@ -7,6 +7,7 @@ type AdminUser = {
   name: string;
   email: string;
   role: string;
+  plan: string;
   isActive: boolean;
   dailyMessageLimit: number;
   usedMessagesToday: number;
@@ -37,6 +38,7 @@ export default function AdminPage() {
         user.name.toLowerCase().includes(q) ||
         user.email.toLowerCase().includes(q) ||
         user.role.toLowerCase().includes(q) ||
+        user.plan.toLowerCase().includes(q) ||
         (user.isActive ? "aktif" : "pasif").includes(q)
       );
     });
@@ -48,11 +50,9 @@ export default function AdminPage() {
 
   async function loadStats() {
     try {
-      const token = localStorage.getItem("token");
-
       const response = await fetch("/api/admin/stats", {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
@@ -78,6 +78,7 @@ export default function AdminPage() {
     data: {
       dailyMessageLimit?: number;
       role?: string;
+      plan?: string;
       resetUsage?: boolean;
       isActive?: boolean;
     }
@@ -123,9 +124,11 @@ export default function AdminPage() {
   }
 
   function updateUserRole(userId: string, role: string) {
-    updateUser(userId, {
-      role,
-    });
+    updateUser(userId, { role });
+  }
+
+  function updateUserPlan(userId: string, plan: string) {
+    updateUser(userId, { plan });
   }
 
   function resetUserUsage(userId: string) {
@@ -189,7 +192,7 @@ export default function AdminPage() {
           <div>
             <h1 className="text-3xl font-bold">Ömer AI Admin Panel</h1>
             <p className="text-zinc-400 mt-2">
-              Kullanıcı, sohbet, mesaj ve yetki yönetimi
+              Kullanıcı, plan, rol, limit ve kullanım yönetimi
             </p>
           </div>
 
@@ -225,7 +228,7 @@ export default function AdminPage() {
             <div>
               <h2 className="text-xl font-semibold">Kullanıcılar</h2>
               <p className="text-sm text-zinc-400 mt-1">
-                Arama, aktif/pasif, rol, günlük limit ve kullanım sıfırlama
+                Plan, aktif/pasif, rol, günlük limit ve kullanım sıfırlama
               </p>
             </div>
 
@@ -253,6 +256,7 @@ export default function AdminPage() {
                   <th className="text-left p-4">Durum</th>
                   <th className="text-left p-4">İsim</th>
                   <th className="text-left p-4">Email</th>
+                  <th className="text-left p-4">Plan</th>
                   <th className="text-left p-4">Rol</th>
                   <th className="text-left p-4">Limit</th>
                   <th className="text-left p-4">Kullanım</th>
@@ -289,10 +293,26 @@ export default function AdminPage() {
 
                     <td className="p-4">
                       <select
+                        defaultValue={user.plan}
+                        onChange={(e) => updateUserPlan(user.id, e.target.value)}
+                        className={`bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 outline-none ${
+                          user.plan === "admin"
+                            ? "text-blue-400"
+                            : user.plan === "pro"
+                            ? "text-green-400"
+                            : "text-zinc-200"
+                        }`}
+                      >
+                        <option value="free">free</option>
+                        <option value="pro">pro</option>
+                        <option value="admin">admin</option>
+                      </select>
+                    </td>
+
+                    <td className="p-4">
+                      <select
                         defaultValue={user.role}
-                        onChange={(e) => {
-                          updateUserRole(user.id, e.target.value);
-                        }}
+                        onChange={(e) => updateUserRole(user.id, e.target.value)}
                         className={`bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 outline-none ${
                           user.role === "admin"
                             ? "text-blue-400"
@@ -353,7 +373,7 @@ export default function AdminPage() {
 
                 {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-zinc-500">
+                    <td colSpan={9} className="p-6 text-center text-zinc-500">
                       Aramaya uygun kullanıcı bulunamadı.
                     </td>
                   </tr>
