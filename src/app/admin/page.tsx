@@ -61,6 +61,7 @@ export default function AdminPage() {
     data: {
       dailyMessageLimit?: number;
       role?: string;
+      resetUsage?: boolean;
     }
   ) {
     try {
@@ -106,6 +107,16 @@ export default function AdminPage() {
   function updateUserRole(userId: string, role: string) {
     updateUser(userId, {
       role,
+    });
+  }
+
+  function resetUserUsage(userId: string) {
+    const ok = confirm("Bu kullanıcının günlük kullanımını sıfırlamak istiyor musun?");
+
+    if (!ok) return;
+
+    updateUser(userId, {
+      resetUsage: true,
     });
   }
 
@@ -178,8 +189,7 @@ export default function AdminPage() {
             <div>
               <h2 className="text-xl font-semibold">Kullanıcılar</h2>
               <p className="text-sm text-zinc-400 mt-1">
-                Kullanıcı rolünü ve günlük mesaj limitini buradan
-                değiştirebilirsin.
+                Rol, günlük limit ve kullanım sıfırlama işlemleri
               </p>
             </div>
 
@@ -200,6 +210,7 @@ export default function AdminPage() {
                   <th className="text-left p-4">Rol</th>
                   <th className="text-left p-4">Limit</th>
                   <th className="text-left p-4">Kullanım</th>
+                  <th className="text-left p-4">İşlem</th>
                   <th className="text-left p-4">Kayıt Tarihi</th>
                 </tr>
               </thead>
@@ -255,17 +266,21 @@ export default function AdminPage() {
                         <span className="text-xs text-zinc-500 whitespace-nowrap">
                           mesaj
                         </span>
-
-                        {savingUserId === user.id && (
-                          <span className="text-xs text-blue-400 whitespace-nowrap">
-                            Kaydediliyor...
-                          </span>
-                        )}
                       </div>
                     </td>
 
                     <td className="p-4">
                       {user.usedMessagesToday} / {user.dailyMessageLimit}
+                    </td>
+
+                    <td className="p-4">
+                      <button
+                        onClick={() => resetUserUsage(user.id)}
+                        disabled={savingUserId === user.id}
+                        className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 rounded-lg px-3 py-2 text-xs font-semibold"
+                      >
+                        {savingUserId === user.id ? "İşleniyor..." : "Sıfırla"}
+                      </button>
                     </td>
 
                     <td className="p-4 text-zinc-400">
