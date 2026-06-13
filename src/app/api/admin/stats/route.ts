@@ -44,6 +44,7 @@ export async function GET(req: Request) {
         name: true,
         email: true,
         role: true,
+        plan: true,
         isActive: true,
         dailyMessageLimit: true,
         usedMessagesToday: true,
