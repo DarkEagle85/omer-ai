@@ -29,12 +29,11 @@ export async function GET(req: Request) {
       );
     }
 
-    const [totalUsers, totalConversations, totalMessages] =
-      await Promise.all([
-        prisma.user.count(),
-        prisma.conversation.count(),
-        prisma.message.count(),
-      ]);
+    const [totalUsers, totalConversations, totalMessages] = await Promise.all([
+      prisma.user.count(),
+      prisma.conversation.count(),
+      prisma.message.count(),
+    ]);
 
     const users = await prisma.user.findMany({
       orderBy: {
@@ -45,6 +44,7 @@ export async function GET(req: Request) {
         name: true,
         email: true,
         role: true,
+        isActive: true,
         dailyMessageLimit: true,
         usedMessagesToday: true,
         createdAt: true,
